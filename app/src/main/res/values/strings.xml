@@ -223,7 +223,7 @@
     <string name="otp_seed_hint">Paste or scan a secret</string>
     <string name="otp_paste">Paste</string>
     <string name="otp_scan">Scan QR code</string>
-    <string name="otp_image">Clipboard image</string>
+    <string name="otp_image">Clpbrd image</string>
     <string name="otp_type">Type</string>
     <string name="otp_hash">Algorithm</string>
     <string name="otp_encoding">Encoding</string>

@@ -17,11 +17,12 @@
    You should have received a copy of the GNU General Public License
    along with KeePassDroid.  If not, see <http://www.gnu.org/licenses/>.
 -->
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:fitsSystemWindows="true"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -32,42 +33,11 @@
         android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat" />
 
-    <Button
-        android:id="@+id/otp_save"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:text="@string/entry_save" />
-
-    <Button
-        android:id="@+id/otp_cancel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@id/otp_save"
-        android:text="@string/entry_cancel" />
-
-    <Button
-        android:id="@+id/otp_remove"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@id/otp_cancel"
-        android:text="@string/otp_remove" />
-
-    <View
-        android:id="@+id/otp_divider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/otp_save"
-        style="@style/Divider" />
-
     <ScrollView
         android:id="@+id/otp_scroll"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/otp_divider"
-        android:layout_below="@id/toolbar"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fillViewport="true">
 
         <LinearLayout
@@ -226,4 +196,30 @@
                 android:inputType="text" />
         </LinearLayout>
     </ScrollView>
-</RelativeLayout>
+
+    <View style="@style/DividerEntry" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/otp_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/entry_save" />
+
+        <Button
+            android:id="@+id/otp_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/entry_cancel" />
+
+        <Button
+            android:id="@+id/otp_remove"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/otp_remove" />
+    </LinearLayout>
+</LinearLayout>
