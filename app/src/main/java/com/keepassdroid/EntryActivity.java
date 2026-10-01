@@ -21,6 +21,7 @@
 package com.keepassdroid;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -65,10 +66,16 @@ import com.android.keepass.KeePass;
 import com.android.keepass.R;
 import com.keepassdroid.app.App;
 import com.keepassdroid.database.PwDatabase;
+import com.keepassdroid.database.PwDatabaseV4;
 import com.keepassdroid.database.PwEntry;
 import com.keepassdroid.database.PwEntryV4;
+import com.keepassdroid.database.edit.OnFinish;
+import com.keepassdroid.database.edit.RunnableOnFinish;
+import com.keepassdroid.database.edit.UpdateEntry;
 import com.keepassdroid.database.exception.SamsungClipboardException;
+import com.keepassdroid.database.security.ProtectedString;
 import com.keepassdroid.intents.Intents;
+import com.keepassdroid.otp.Otp;
 import com.keepassdroid.utils.EmptyUtils;
 import com.keepassdroid.utils.NotificationUtil;
 import com.keepassdroid.utils.Types;
@@ -80,6 +87,9 @@ public class EntryActivity extends LockCloseHideActivity {
 
     public static final int NOTIFY_USERNAME = 1;
     public static final int NOTIFY_PASSWORD = 2;
+    public static final int NOTIFY_OTP = 3;
+
+    private static final int REQUEST_OTP_SETUP = 2001;
 
     public static void Launch(Activity act, PwEntry pw, int pos) {
         Intent i;
@@ -103,6 +113,20 @@ public class EntryActivity extends LockCloseHideActivity {
     private NotificationManager mNM;
     private BroadcastReceiver mIntentReceiver;
     protected boolean readOnly = false;
+
+    private View mOtpContainer;
+    private View mOtpDivider;
+    private TextView mOtpView;
+    private boolean mHasOtp;
+    private Otp mOtp;
+    private final Handler mOtpHandler = new Handler();
+    private final Runnable mOtpTicker = new Runnable() {
+        @Override
+        public void run() {
+            updateOtpDisplay();
+            mOtpHandler.postDelayed(this, 1000);
+        }
+    };
 
     private DateFormat dateFormat;
     private DateFormat timeFormat;
@@ -198,6 +222,7 @@ public class EntryActivity extends LockCloseHideActivity {
 
         setupEditButtons();
         setupClickListeners();
+        setupOtp();
 
         // Notification Manager
         mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -210,6 +235,8 @@ public class EntryActivity extends LockCloseHideActivity {
 
     @Override
     protected void onDestroy() {
+        mOtpHandler.removeCallbacks(mOtpTicker);
+
         // These members might never get initialized if the app timed out
         if ( mIntentReceiver != null ) {
             unregisterReceiver(mIntentReceiver);
@@ -242,6 +269,12 @@ public class EntryActivity extends LockCloseHideActivity {
             mNM.notify(NOTIFY_USERNAME, username);
         }
 
+        if (entryHasOtp()) {
+            // only show notification if an OTP is available
+            Notification otp = getNotification(Intents.COPY_OTP, R.string.copy_otp);
+            mNM.notify(NOTIFY_OTP, otp);
+        }
+
         mIntentReceiver = new BroadcastReceiver() {
 
             @Override
@@ -262,6 +295,8 @@ public class EntryActivity extends LockCloseHideActivity {
                     if (!password.isEmpty())
                         timeoutCopyToClipboard(getString(R.string.hint_login_pass),
                                 mEntry.getPassword(), true);
+                } else if ( action.equals(Intents.COPY_OTP) ) {
+                    copyOtp();
                 }
             }
         };
@@ -269,6 +304,7 @@ public class EntryActivity extends LockCloseHideActivity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intents.COPY_USERNAME);
         filter.addAction(Intents.COPY_PASSWORD);
+        filter.addAction(Intents.COPY_OTP);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(mIntentReceiver, filter, RECEIVER_EXPORTED);
@@ -328,6 +364,147 @@ public class EntryActivity extends LockCloseHideActivity {
 
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // OTP support
+    // ---------------------------------------------------------------------------------------------
+
+    private boolean entryHasOtp() {
+        if (mEntry instanceof PwEntryV4) {
+            ProtectedString otp = ((PwEntryV4) mEntry).strings.get(Otp.FIELD);
+            return otp != null && otp.toString() != null && !otp.toString().isEmpty();
+        }
+        return false;
+    }
+
+    private void setupOtp() {
+        mOtpContainer = findViewById(R.id.entry_otp_container);
+        mOtpDivider = findViewById(R.id.entry_otp_divider);
+        mOtpView = findViewById(R.id.entry_otp);
+
+        mHasOtp = entryHasOtp();
+        mOtp = null;
+        if (mHasOtp) {
+            mOtp = Otp.parse(((PwEntryV4) mEntry).strings.get(Otp.FIELD).toString());
+        }
+
+        if (mOtpContainer == null) {
+            stopOtpTicker();
+            return;
+        }
+
+        if (mHasOtp) {
+            mOtpContainer.setVisibility(View.VISIBLE);
+            if (mOtpDivider != null) {
+                mOtpDivider.setVisibility(View.VISIBLE);
+            }
+            View.OnClickListener listener = v -> copyOtp();
+            mOtpContainer.setOnClickListener(listener);
+            if (mOtpView != null) {
+                mOtpView.setOnClickListener(listener);
+            }
+            updateOtpDisplay();
+            startOtpTicker();
+        } else {
+            mOtpContainer.setVisibility(View.GONE);
+            if (mOtpDivider != null) {
+                mOtpDivider.setVisibility(View.GONE);
+            }
+            stopOtpTicker();
+        }
+    }
+
+    private String currentOtpCode() {
+        if (mOtp == null || !mOtp.isValid()) {
+            return null;
+        }
+        String code;
+        if (mOtp.getType() == Otp.Type.HOTP) {
+            code = mOtp.generate(mOtp.getCounter());
+        } else {
+            code = mOtp.getOtp();
+        }
+        return (code == null || code.isEmpty()) ? null : code;
+    }
+
+    private void updateOtpDisplay() {
+        if (!mHasOtp || mOtpView == null) {
+            return;
+        }
+        String code = currentOtpCode();
+        if (code == null) {
+            mOtpView.setText(R.string.otp_invalid);
+            return;
+        }
+
+        String display = Otp.readable(code);
+        if (mOtp.getType() != Otp.Type.HOTP) {
+            int remaining = mOtp.getRemainingSeconds();
+            if (remaining <= Otp.TOTP_SOON_EXPIRING) {
+                display = display + " (" + remaining + ")";
+            }
+        }
+        mOtpView.setText(display);
+    }
+
+    private void startOtpTicker() {
+        mOtpHandler.removeCallbacks(mOtpTicker);
+        mOtpHandler.postDelayed(mOtpTicker, 1000);
+    }
+
+    private void stopOtpTicker() {
+        mOtpHandler.removeCallbacks(mOtpTicker);
+    }
+
+    private void copyOtp() {
+        String code = currentOtpCode();
+        if (code == null) {
+            return;
+        }
+        timeoutCopyToClipboard(getString(R.string.hint_otp), code, true, R.string.otp_copied);
+    }
+
+    private void launchOtpSetup() {
+        if (!(mEntry instanceof PwEntryV4) || readOnly) {
+            return;
+        }
+        PwEntryV4 entry = (PwEntryV4) mEntry;
+        ProtectedString current = entry.strings.get(Otp.FIELD);
+        OtpSetupActivity.Launch(this, current == null ? null : current.toString(), REQUEST_OTP_SETUP);
+    }
+
+    private void saveOtp(String otpauth) {
+        if (!(mEntry instanceof PwEntryV4) || readOnly) {
+            return;
+        }
+
+        PwEntryV4 newEntry = (PwEntryV4) mEntry.clone(true);
+        newEntry.history = new ArrayList<>(newEntry.history);
+        newEntry.createBackup((PwDatabaseV4) App.getDB().pm);
+        if (otpauth == null || otpauth.isEmpty()) {
+            newEntry.strings.remove(Otp.FIELD);
+        } else {
+            newEntry.strings.put(Otp.FIELD, new ProtectedString(true, otpauth));
+        }
+
+        OnFinish onFinish = new OnFinish(new Handler()) {
+            @Override
+            public void run() {
+                if (mSuccess) {
+                    fillData(true);
+                    setupOtp();
+                    invalidateOptionsMenu();
+                    EntryActivity.this.setResult(KeePass.EXIT_REFRESH);
+                } else {
+                    displayMessage(EntryActivity.this);
+                }
+            }
+        };
+
+        RunnableOnFinish task = new UpdateEntry(this, App.getDB(), mEntry, newEntry, onFinish);
+        ProgressTask pt = new ProgressTask(this, task, R.string.saving_database);
+        pt.run();
+    }
+
     private void populateText(int viewId, int resId) {
         TextView tv = findViewById(viewId);
         tv.setText(resId);
@@ -341,6 +518,21 @@ public class EntryActivity extends LockCloseHideActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_OTP_SETUP) {
+            if (resultCode == RESULT_OK && data != null) {
+                if (data.getBooleanExtra(OtpSetupActivity.EXTRA_OTP_REMOVE, false)) {
+                    saveOtp(null);
+                } else {
+                    String otp = data.getStringExtra(OtpSetupActivity.EXTRA_OTP_RESULT);
+                    if (otp != null) {
+                        saveOtp(otp);
+                    }
+                }
+            }
+            return;
+        }
+
         if ( resultCode == KeePass.EXIT_REFRESH || resultCode == KeePass.EXIT_REFRESH_TITLE ) {
             fillData(true);
             if ( resultCode == KeePass.EXIT_REFRESH_TITLE ) {
@@ -368,6 +560,8 @@ public class EntryActivity extends LockCloseHideActivity {
         MenuItem gotoUrl = menu.findItem(R.id.menu_goto_url);
         MenuItem copyUser = menu.findItem(R.id.menu_copy_user);
         MenuItem copyPass = menu.findItem(R.id.menu_copy_pass);
+        MenuItem copyOtp = menu.findItem(R.id.menu_copy_otp);
+        MenuItem setupOtp = menu.findItem(R.id.menu_setup_otp);
 
         // In API >= 11 onCreateOptionsMenu may be called before onCreate completes
         // so mEntry may not be set
@@ -375,6 +569,8 @@ public class EntryActivity extends LockCloseHideActivity {
             gotoUrl.setVisible(false);
             copyUser.setVisible(false);
             copyPass.setVisible(false);
+            copyOtp.setVisible(false);
+            setupOtp.setVisible(false);
         }
         else {
             String url = mEntry.getUrl();
@@ -390,6 +586,8 @@ public class EntryActivity extends LockCloseHideActivity {
                 // disable button if password is not available
                 copyPass.setVisible(false);
             }
+            copyOtp.setVisible(entryHasOtp());
+            setupOtp.setVisible(mEntry instanceof PwEntryV4 && !readOnly);
         }
 
         return true;
@@ -453,6 +651,12 @@ public class EntryActivity extends LockCloseHideActivity {
             timeoutCopyToClipboard(getString(R.string.hint_login_pass),
                     mEntry.getPassword(true, App.getDB().pm), true);
             return true;
+        } else if (itemId == R.id.menu_copy_otp) {
+            copyOtp();
+            return true;
+        } else if (itemId == R.id.menu_setup_otp) {
+            launchOtpSetup();
+            return true;
         } else if (itemId == R.id.menu_lock) {
             App.setShutdown();
             setResult(KeePass.EXIT_LOCK);
@@ -468,6 +672,11 @@ public class EntryActivity extends LockCloseHideActivity {
     }
 
     private void timeoutCopyToClipboard(String label, String text, boolean sensitive) {
+        timeoutCopyToClipboard(label, text, sensitive,
+                sensitive ? R.string.password_copied : R.string.username_copied);
+    }
+
+    private void timeoutCopyToClipboard(String label, String text, boolean sensitive, int toastResId) {
         try {
             Util.copyToClipboard(this, label, text, sensitive);
         } catch (SamsungClipboardException e) {
@@ -478,11 +687,7 @@ public class EntryActivity extends LockCloseHideActivity {
         // For versions of Android that don't already show an overlay when the clipboard is copied
         // to, show a toast.
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            if (sensitive) {
-                Toast.makeText(this, R.string.password_copied, Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, R.string.username_copied, Toast.LENGTH_SHORT).show();
-            }
+            Toast.makeText(this, toastResId, Toast.LENGTH_SHORT).show();
         }
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);

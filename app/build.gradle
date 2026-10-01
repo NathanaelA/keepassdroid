@@ -6,18 +6,18 @@ android {
     defaultConfig {
         applicationId = "com.android.keepass"
         minSdkVersion 23
-        targetSdkVersion 34
+        targetSdkVersion 37
 
         multiDexEnabled true
 
-        versionCode = 222
-        versionName = "2.6.9.2"
+        versionCode = 223
+        versionName = "2.7.0.0"
 
         testApplicationId = "com.keepassdroid.tests"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
 
-        ndkVersion '28.2.13676358'
+        ndkVersion '26.1.10909125'
         ndk {
             abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
         }
@@ -54,25 +54,37 @@ android {
     }
     namespace 'com.android.keepass'
 
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
 }
 
 dependencies {
 
-    implementation ('org.bouncycastle:bcprov-jdk15to18:1.84') {
+    implementation ('org.bouncycastle:bcprov-jdk15to18:1.86') {
         exclude group: 'junit'
     }
-    implementation 'joda-time:joda-time:2.14.2'
-    implementation 'androidx.core:core:1.19.0'
+    implementation 'joda-time:joda-time:2.15.0'
+    implementation 'androidx.core:core:1.19.1'
     implementation "androidx.multidex:multidex:2.0.1"
     implementation "androidx.biometric:biometric:1.1.0"
     implementation "androidx.preference:preference:1.2.1"
     implementation "androidx.activity:activity:1.13.0"
     implementation "com.google.android.material:material:1.14.0"
     implementation "androidx.multidex:multidex:2.0.1"
-    implementation "androidx.loader:loader:1.1.0"
+    implementation "androidx.loader:loader:1.2.0"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.22"))
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.11.0'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.11.0'
+
+    // QR code decoding for OTP setup (camera capture and clipboard images)
+    implementation 'com.google.zxing:core:3.5.4'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.16.1'
 
     androidTestImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.7.0'

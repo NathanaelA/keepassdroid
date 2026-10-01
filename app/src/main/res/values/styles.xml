@@ -80,4 +80,5 @@ name="android:textColor">@android:color/primary_text_dark</item>
 	<style name="Divider" parent="DividerEntry">
 		<item name="android:background">?android:attr/listDivider</item>
 	</style>
+
 </resources>

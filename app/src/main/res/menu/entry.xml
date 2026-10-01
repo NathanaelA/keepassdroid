@@ -38,4 +38,10 @@
     <item android:id="@+id/menu_copy_pass"
         android:title="@string/menu_copy_pass"
         app:showAsAction="ifRoom" />
+    <item android:id="@+id/menu_copy_otp"
+        android:title="@string/menu_copy_otp"
+        app:showAsAction="ifRoom" />
+    <item android:id="@+id/menu_setup_otp"
+        android:title="@string/menu_setup_otp"
+        app:showAsAction="never" />
 </menu>

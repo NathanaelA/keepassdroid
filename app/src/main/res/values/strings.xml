@@ -211,6 +211,36 @@
     <string name="fingerprint_invalid_key">Invalid Key problem</string>
     <string name="no_external_permissions">Permission to read and write external storage was denied</string>
 
+    <!-- One time password (OTP / TOTP / HOTP) -->
+    <string name="entry_otp">OTP:</string>
+    <string name="hint_otp">OTP</string>
+    <string name="otp_copied">OTP copied to clipboard</string>
+    <string name="copy_otp">Select to copy OTP to clipboard</string>
+    <string name="menu_copy_otp">Copy OTP</string>
+    <string name="menu_setup_otp">Set up OTP</string>
+    <string name="otp_setup_title">Set up OTP</string>
+    <string name="otp_seed">Secret / otpauth URI:</string>
+    <string name="otp_seed_hint">Paste or scan a secret</string>
+    <string name="otp_paste">Paste</string>
+    <string name="otp_scan">Scan QR code</string>
+    <string name="otp_image">Clipboard image</string>
+    <string name="otp_type">Type</string>
+    <string name="otp_hash">Algorithm</string>
+    <string name="otp_encoding">Encoding</string>
+    <string name="otp_digits">Digits</string>
+    <string name="otp_period">Period (seconds)</string>
+    <string name="otp_counter">Counter</string>
+    <string name="otp_pin">Yandex PIN</string>
+    <string name="otp_issuer">Issuer</string>
+    <string name="otp_label">Label</string>
+    <string name="otp_preview">Current OTP: %1$s</string>
+    <string name="otp_invalid">Invalid OTP secret</string>
+    <string name="otp_no_image">No QR code image found in clipboard</string>
+    <string name="otp_no_qr">No QR code found in image</string>
+    <string name="otp_clipboard_empty">Clipboard is empty</string>
+    <string name="otp_camera_error">Could not open the camera</string>
+    <string name="otp_remove">Remove</string>
+
     <string-array name="clipboard_timeout_options">
     	<item>30 seconds</item>
     	<item>1 minute</item>

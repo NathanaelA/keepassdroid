@@ -21,6 +21,7 @@
   android:id="@+id/entry_table"
   android:layout_height="wrap_content"
   android:layout_width="fill_parent"
+	android:fitsSystemWindows="true"
   android:orientation="vertical">	
 	<!-- Username -->
 	<LinearLayout
@@ -89,6 +90,32 @@
 		/>
 	</LinearLayout>
 	<View style="@style/Divider" />
+	<!-- OTP -->
+	<LinearLayout
+		android:id="@+id/entry_otp_container"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:clickable="true"
+		android:focusable="true"
+		android:background="?attr/selectableItemBackground"
+		android:visibility="gone">
+		<TextView android:id="@+id/entry_otp_label"
+		  android:layout_width="fill_parent"
+		  android:layout_height="wrap_content"
+		  android:text="@string/entry_otp"
+		  style="@style/WhiteOnDarkSmall"
+		/>
+		<TextView android:id="@+id/entry_otp"
+		  android:layout_width="fill_parent"
+		  android:layout_height="wrap_content"
+		  android:typeface="monospace"
+		  style="@style/EntryItem"
+		/>
+	</LinearLayout>
+	<View android:id="@+id/entry_otp_divider"
+	  style="@style/Divider"
+	  android:visibility="gone" />
 	<!-- Comment -->
 	<TextView android:id="@+id/entry_comment_label"
 	  android:layout_width="fill_parent"

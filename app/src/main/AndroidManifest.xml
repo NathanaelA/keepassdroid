@@ -20,6 +20,7 @@
       android:fullBackupContent="@xml/backup"
       android:allowBackup="true"
       android:largeHeap="true"
+      android:theme="@style/NoTitleBar"
       android:requestLegacyExternalStorage="true"
       android:preserveLegacyExternalStorage="true"
       android:backupAgent="com.keepassdroid.backup.SettingsBackupAgent">
@@ -120,6 +121,17 @@
             android:theme="@style/NoTitleBar"></activity>
         <activity android:name="com.keepassdroid.GeneratePasswordActivity"
             android:theme="@style/NoTitleBar"></activity>
+        <activity android:name="com.keepassdroid.OtpSetupActivity" android:configChanges="orientation|keyboardHidden"
+            android:theme="@style/NoTitleBar"></activity>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/otp_file_paths" />
+        </provider>
         <meta-data android:name="com.a0soft.gphone.aTrackDog.webURL" android:value="http://keepassdroid.com" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
     </application>

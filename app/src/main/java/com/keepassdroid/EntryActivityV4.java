@@ -61,7 +61,7 @@ public class EntryActivityV4 extends EntryActivity {
             for (Map.Entry<String, ProtectedString> pair : entry.strings.entrySet()) {
                 String key = pair.getKey();
 
-                if (!PwEntryV4.IsStandardString(key)) {
+                if (!PwEntryV4.IsStandardString(key) && !com.keepassdroid.otp.Otp.FIELD.equals(key)) {
                     String text = pair.getValue().toString();
                     View view = new EntrySection(this, null, key, spr.compile(text, entry, pm));
                     group.addView(view);
